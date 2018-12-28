@@ -9,7 +9,7 @@ DELTA_RE = re.compile('^(?:(?P<days>\d*)d)?(?:(?P<hours>\d*)h)?(?:(?P<minutes>\d
 
 def logtail(log_file, seek_date, regexp, date_format):
     log_file.seek(0, os.SEEK_END)
-    last_byte = log_file.tell()
+    last_byte = log_file.tell() - 1
     if last_byte == 0:
         return ""
     first_byte = 0
@@ -37,11 +37,15 @@ def search_eol_left(log_file, middle_byte):
     start = middle_byte
     log_file.seek(start)
     char = log_file.read(1)
+    if char == "\n":
+        start = start - 1
+        log_file.seek(start)
+        char = log_file.read(1)
     while char != "\n" and start != 0:
         start = start - 1
         log_file.seek(start)
         char = log_file.read(1)
-    return start if start == 0  else start + 1
+    return start if start == 0 else start + 1
 
 
 def search_eol_right(log_file, last_byte, middle_byte):
@@ -84,6 +88,8 @@ def turn_to_date(seek_date, date_format):
 def compare_to_sample_date(log_line, sample_date, regexp, date_format):
     date_str = parse_str(log_line, regexp)
     date = datetime.strptime(date_str, date_format)
+    if date.year == 1900:
+        date.replace(year=datetime.now().year)
     return 1 if date < sample_date else 0
 
 
